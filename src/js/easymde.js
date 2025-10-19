@@ -30,6 +30,7 @@ var bindings = {
     'toggleBlockquote': toggleBlockquote,
     'toggleOrderedList': toggleOrderedList,
     'toggleUnorderedList': toggleUnorderedList,
+    'toggleCheckList': toggleCheckList,
     'toggleCodeBlock': toggleCodeBlock,
     'togglePreview': togglePreview,
     'toggleStrikethrough': toggleStrikethrough,
@@ -323,6 +324,8 @@ function getState(cm, pos) {
             text = cm.getLine(pos.line);
             if (/^\s*\d+\.\s/.test(text)) {
                 ret['ordered-list'] = true;
+            } else if (/^\s*-\s*\[[ xX]\]\s/.test(text)) {
+                ret['check-list'] = true;  // <-- detect checklist
             } else {
                 ret['unordered-list'] = true;
             }
@@ -795,7 +798,7 @@ function toggleHeading6(editor) {
 function toggleUnorderedList(editor) {
     var cm = editor.codemirror;
 
-    var listStyle = '*'; // Default
+    var listStyle = '-'; // Default
     if (['-', '+', '*'].includes(editor.options.unorderedListStyle)) {
         listStyle = editor.options.unorderedListStyle;
     }
@@ -803,6 +806,12 @@ function toggleUnorderedList(editor) {
     _toggleLine(cm, 'unordered-list', listStyle);
 }
 
+/**
+ * Action for toggling check-list
+ */
+function toggleCheckList(editor) {
+    _toggleLine(editor.codemirror, 'check-list');
+}
 
 /**
  * Action for toggling ol.
@@ -1184,6 +1193,7 @@ function _toggleLine(cm, name, liststyle) {
         'quote': /^(\s*)>\s+/,
         'unordered-list': listRegexp,
         'ordered-list': listRegexp,
+        'check-list': /^(\s*)- \[[ xX]\](\s+)/,
     };
 
     var _getChar = function (name, i) {
@@ -1191,6 +1201,7 @@ function _toggleLine(cm, name, liststyle) {
             'quote': '>',
             'unordered-list': liststyle,
             'ordered-list': '%%i.',
+            'check-list': '- [ ]',
         };
 
         return map[name].replace('%%i', i);
@@ -1201,6 +1212,7 @@ function _toggleLine(cm, name, liststyle) {
             'quote': '>',
             'unordered-list': '\\' + liststyle,
             'ordered-list': '\\d+.',
+            'checklist': '- \\[[ xX]\\]',   // <-- match - [ ] or - [x]
         };
         var rt = new RegExp(map[name]);
 
@@ -1472,6 +1484,7 @@ var iconClassMap = {
     'quote': 'fa fa-quote-left',
     'ordered-list': 'fa fa-list-ol',
     'unordered-list': 'fa fa-list-ul',
+    'check-list': 'fa fa-check-square-o',
     'clean-block': 'fa fa-eraser',
     'link': 'fa fa-link',
     'image': 'fa fa-image',
@@ -1567,6 +1580,13 @@ var toolbarBuiltInButtons = {
         title: 'Generic List',
         default: true,
     },
+    'check-list': {
+        name: 'check-list',
+        action: toggleCheckList,
+        className: iconClassMap['check-list'],
+        title: 'Check List',
+        default: true,
+    },    
     'ordered-list': {
         name: 'ordered-list',
         action: toggleOrderedList,
@@ -2051,7 +2071,7 @@ EasyMDE.prototype.markdown = function (text) {
         var htmlText = marked.parse(text);
 
         // Sanitize HTML
-        if (this.options.renderingConfig && typeof this.options.renderingConfig.sanitizerFunction === 'function') {
+        if (this.options && this.options.renderingConfig && typeof this.options.renderingConfig.sanitizerFunction === 'function') {
             htmlText = this.options.renderingConfig.sanitizerFunction.call(this, htmlText);
         }
 
