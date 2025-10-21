@@ -68,6 +68,10 @@ Or *jsDelivr*:
 <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
 ```
 
+```
+npx gulp watch
+```
+
 ## How to use
 
 ### Loading the editor

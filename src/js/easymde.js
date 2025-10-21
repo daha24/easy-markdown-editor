@@ -43,6 +43,7 @@ var bindings = {
     'cleanBlock': cleanBlock,
     'drawTable': drawTable,
     'drawHorizontalRule': drawHorizontalRule,
+    'insertTimestamp': insertTimestamp,
     'undo': undo,
     'redo': redo,
     'toggleSideBySide': toggleSideBySide,
@@ -726,6 +727,29 @@ function toggleCodeBlock(editor) {
             _replaceSelection(cm, false, ['`', '`']);
         }
     }
+}
+
+
+/**
+ * Action for inserting current datetime
+ */
+function insertTimestamp(editor) {
+    const cm = editor.codemirror;        // get CodeMirror instance
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, '0');
+    const timestamp = `--${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}--`;
+    const startPoint = cm.getCursor('start');
+    const endPoint = cm.getCursor('end');
+    if (startPoint.line !== endPoint.line || startPoint.ch !== endPoint.ch) {
+        cm.replaceRange(timestamp + '\n', startPoint, endPoint);
+    } else {
+        const cursor = cm.getCursor();
+        const start = (!cm.somethingSelected() && cursor.ch > 0) ? '\n' : ''; // newline only if no selection and not at start
+        const end = timestamp + '\n';
+        _replaceSelection(cm, false, [start, end]);
+        cm.setCursor({ line: cursor.line + 1 + (cursor.ch === 0 ? 0 : 1), ch: 0 }); // move to next line start
+    }
+    cm.focus();
 }
 
 /**
@@ -1488,6 +1512,7 @@ var iconClassMap = {
     'clean-block': 'fa fa-eraser',
     'link': 'fa fa-link',
     'image': 'fa fa-image',
+    'timestamp': 'fa fa-clock-o',
     'upload-image': 'fa fa-image',
     'table': 'fa fa-table',
     'horizontal-rule': 'fa fa-minus',
@@ -1586,7 +1611,7 @@ var toolbarBuiltInButtons = {
         className: iconClassMap['check-list'],
         title: 'Check List',
         default: true,
-    },    
+    },
     'ordered-list': {
         name: 'ordered-list',
         action: toggleOrderedList,
@@ -1637,6 +1662,13 @@ var toolbarBuiltInButtons = {
     },
     'separator-3': {
         name: 'separator-3',
+    },
+    'timestamp': {
+        name: 'timestamp',
+        action: insertTimestamp,
+        className: iconClassMap['timestamp'],
+        title: 'Date Time Stamp',
+        default: true,
     },
     'preview': {
         name: 'preview',
